@@ -1,0 +1,238 @@
+--[[
+        Plugin configuration file (aka 'Advanced Settings').
+        
+        Note: Named members of return table are accessible in source code as:
+        
+            app:getPref( name )
+            
+            provided there is no app:initPref( name, val ) or app:setPref( name, val ) statements executed prior,
+            which hide/override the named members in this file.
+            
+            
+        *** Important: when editing, take care to assure punctuation and syntax are not disturbed. In comments, it doesn't matter, but in the rest - every character is meaningful,
+                       including spaces, commas, brackets, dots, underscores...
+                       
+        There are 2 kinds of comments:
+        1. single line
+        2. multi-line (like this one).
+        
+        lines beginning with '--' (without the apostrophes) are single line comments.
+        lines beginning with '- - [ [' (without the spaces) begin multi-line comments, which end with '- - ] ]' (without the spaces).
+        
+        Definitions:
+        
+        * Comment-out: to prepend '--' to a non-comment line making it a comment, or to wrap one or more non-comment lines with '- - [ [' & '- - ] ]'. This turns non-comment lines into comments, rendering them null & void for all practical purposes.
+        * Un-comment: to remove the '--' at the front of a comment line thus enabling it to take effect (or removing '- - [ [' & '- - ] ]' wrappage).
+        
+        
+        This configuration file is interpreted in the context of the Elare Plugin Framework - most Lr namespaces are available, and all standard Elare interface objects are available, including:
+        
+        String/text formatting:
+        * str:fmtx - a derivative of Lightroom's LOC function - same syntax for specifying placeholders in the format string..., e.g.
+            str:fmtx( "Hello ^1^2", "World", "!!!" ) -- will create the string: "Hello World!!!".
+          string.format 'C' string formatting function, e.g.
+            string.format( "%u times", count ) -- outputs "5 times", if count is 5.
+        Debugging (ignored if advanced debugging is not enabled) :
+        * Debug.lognpp - log any number of parameters in a "pretty" format, e.g.
+            Debug.lognpp( "before", devSets, "after", photo:getDevelopSettings() ) -- log before and after develop settings.
+        * Debug.pause and Debug.pauseIf - shows values of variables, if any, and presents options to keep going or stop, e.g.
+            Debug.pause( myvar ) -- stop execution temporarily, and show the value of myvar variable.
+            Debug.pause() -- show nothing, but confirm execution has reached this point.
+        Logging to plugin log file:
+        * app:log and app:logv log file methods, e.g.
+            app:log( "Here it is: ^1", it ) -- log it
+            app:logv( "hmm..." ) -- log hmm... - included in log file only if verbose logging is enabled.
+            
+        and MANY more, but the luadoc is out of date - see source code itself for reference.
+          
+        Reference documentation can be obtained by reading the API doc, downloadable as part of the Lightroom SDK, from here:
+        
+        http://www.adobe.com/devnet/photoshoplightroom.html
+        
+        Get lua language documentation from www.lua.org
+--]]
+
+-- declare return table
+local _t = {}
+
+
+
+--[[
+        Output control variables:
+--]]
+
+-- set to true to have photo details, false for more compact output.
+_t.includePhotos = false
+
+-- set to true to have entries included for keywords with no photos assigned, false otherwise.
+-- *** only applies when doing "whole catalog".
+_t.includeEmptyKeywords = true
+
+
+
+-- set to false to exclude blank lines - may be more suited for adapting to csv output ###1
+_t.includeBlankLines = true
+
+
+
+-- [ [ csv formatting: ###1 NYI
+
+-- set to tab to facilitate csv output. ###1 not yet used.
+-- examples:
+--     _t.separator = "\t" -- tab.
+_t.separator = "\n"
+
+-- ] ]
+
+
+
+--[[
+        Function to define sort order.
+        
+        Instructions:
+            set to nil for default sort order.
+            set to function for preferred sort order.
+            
+        Examples:
+        
+            -- sort by number of photos assigned.
+            _t.sortFunc = function( params )
+                local t = params.keywordTable
+                local one = #t[params.keywordPathOne] -- number of photos
+                local two = #t[params.keywordPathTwo] -- ditto.
+                if two > one then return true end
+            end
+            
+            -- same as factory default sort order
+            _t.sortFunc = function( params )
+                if LrPathUtils.leafName( two ) > LrPathUtils.leafName( one ) then return true end
+            end
+            
+            -- use factory default sort order.
+            _t.sortFunc = nil
+--]]
+_t.sortFunc = function( params )
+    local t = params.keywordTable
+    local one = #t[params.keywordPathOne] -- number of photos
+    local two = #t[params.keywordPathTwo] -- ditto.
+    if two > one then return true end
+end
+
+
+
+--------------------------------------------
+--        Elare Plugin Framework preferences.
+---------------------------------------------
+--        (not all are used in every plugin)
+---------------------------------------------
+--        Note: If plugin defines a UI for these,
+--        then values in here will be ineffective.
+--------------------------------------------
+
+
+--[[
+        Save Metadata Mode - what technique used when metadata must be saved.
+        
+        Examples:
+        
+            _t.saveMetadataMode = 'auto'       -- automatic (scripted keystroke method, which may not work on some systems).
+            _t.saveMetadataMode = 'manual'     -- manual (no keystrokes issued, user must take responsibility each time, then answer a prompt).
+            _t.saveMetadataMode = nil          -- let plugin decide.
+--]]
+_t.saveMetadataMode = nil
+
+
+
+--[[
+        Keyboard character issued to save metadata.
+        
+        Examples:
+        
+            _t.saveMetadataKeyChar = 's'        -- std english keyboards.
+            _t.saveMetadataKeyChar = nil        -- let plugin decide
+--]]
+_t.saveMetadataKeyChar = nil
+
+
+
+--[[
+        How long (in seconds) metadata save box is displayed in manual mode to give user a chance to save metadata manually.
+        
+        Examples:
+        
+            _t.delayForManualMetadataSaveBox = 2          -- 2 seconds.
+            _t.delayForManualMetadataSaveBox = nil        -- let plugin decide
+--]]
+_t.delayForManualMetadataSaveBox = nil
+
+
+
+--[[
+        Maximum time to wait (in seconds) in manual mode, before giving up on metadata read.
+        
+        *** Despite the name, applies in Windows too.
+        
+        Examples:
+        
+            _t.timeRequiredToReadMetadataOnMac = 7          -- 7 seconds.
+            _t.timeRequiredToReadMetadataOnMac = nil        -- let plugin decide
+--]]
+_t.timeRequiredToReadMetadataOnMac = nil
+
+
+
+--[[
+        Read Metadata Mode - what technique used when metadata must be read.
+        
+        *** Best *not* to set this to 'auto' if using Mac.
+        
+        Examples:
+        
+            _t.readMetadataMode = 'auto'       -- automatic (scripted keystroke method, which may not work on some systems).
+            _t.readMetadataMode = 'manual'     -- manual (no keystrokes issued, user must take responsibility each time, then answer a prompt).
+            _t.readMetadataMode = nil          -- let plugin decide.
+--]]
+_t.readMetadataMode = nil
+
+
+
+--[[
+        Alt-keyboard character issued to read metadata.
+        
+        *** Does not apply on Mac.
+        
+        Examples:
+        
+            _t.readMetadataKeyChar = 'mr'        -- std english keyboards.
+            _t.readMetadataKeyChar = nil        -- let plugin decide
+--]]
+_t.readMetadataKeySeq = nil
+
+
+
+--[[
+        Keyboard character issued to invoke grid mode of library module.
+        
+        Examples:
+        
+            _t.gridModeChar = 'g'        -- std english keyboards.
+            _t.gridModeChar = nil        -- let plugin decide
+--]]
+_t.gridModeChar = nil
+
+
+
+--[[
+        Base time to wait (in seconds) for various time-sensitive operations that involve delays for settling time in Lightroom.
+        
+        Examples:
+        
+            _t.timebase = .1          -- 1/10th of a second.
+            _t.timebase = nil        -- let plugin decide
+--]]
+_t.timebase = nil
+
+
+
+-- return config table
+return _t

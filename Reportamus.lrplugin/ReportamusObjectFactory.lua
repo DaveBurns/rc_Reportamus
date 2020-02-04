@@ -1,0 +1,85 @@
+--[[
+        ReportamusObjectFactory.lua
+        
+        Creates special objects used in the guts of the framework.
+        
+        This is what you edit to change the classes of framework objects
+        that you have extended.
+--]]
+
+local ReportamusObjectFactory, dbg = ObjectFactory:newClass{ className = 'ReportamusObjectFactory', register = false }
+
+
+
+--- Constructor for extending class.
+--
+--  @usage  I doubt this will be necessary, since there is generally
+--          only one special object factory per plugin, mostly present
+--          for the sake of completeness...
+--
+function ReportamusObjectFactory:newClass( t )
+    return ObjectFactory.newClass( self, t )
+end
+
+
+
+--- Constructor for new instance.
+--
+function ReportamusObjectFactory:new( t )
+    local o = ObjectFactory.new( self, t )
+    return o
+end
+
+
+
+--- Framework module loader.
+--
+--  @usage      Generally better to handle in other ways,
+--              but this method can help when in a jam...
+--
+--  @return     loaded module return value, or if code is programmed for module to be optional, can return nil to exclude module.
+--
+function ReportamusObjectFactory:frameworkModule( spec )
+    --if spec == 'System/Preferences' then
+    --    return nil - at the moment, this is the only way to kill the preference preset manager.
+    --else
+        return ObjectFactory.frameworkModule( self, spec )
+    --end
+end
+
+
+
+--- Creates instance object of specified class.
+--
+--  @param      class       class object OR string specifying class.
+--  @param      ...         initial table params forwarded to 'new' constructor.
+--
+function ReportamusObjectFactory:newObject( class, ... )
+    if type( class ) == 'table' then
+        --if class == Manager then
+        --    return ReportamusManager:new( ... )
+        --end
+    elseif type( class ) == 'string' then
+        if class == 'Manager' then
+            return ReportamusManager:new( ... )
+        elseif class == 'ExportDialog' then
+            if gbl:getValue( 'ExtendedPublish' ) then -- export supported with publish service.
+                return ExtendedPublish:newDialog( ... )
+            else                                       -- export supported without publish service.
+                return ExtendedExport:newDialog( ... )
+            end
+        elseif class == 'Export' then
+            if gbl:getValue( 'ExtendedPublish' ) then
+                return ExtendedPublish:newExport( ... ) -- export supported with publish service.
+            else
+                return ExtendedExport:newExport( ... ) -- export supprted without publish service.
+            end
+        end
+    end
+    return ObjectFactory.newObject( self, class, ... )
+end
+
+
+
+return ReportamusObjectFactory 
+-- the end.
